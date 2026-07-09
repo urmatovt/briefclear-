@@ -1,17 +1,18 @@
 // Vercel serverless function
-// Держит API-ключ на сервере, браузер его никогда не видит
+// Keeps the API key on the server, the browser never sees it
 
-const SYSTEM = `Ты — опытный арт-директор, который помогает фрилансерам превращать сырые, расплывчатые брифы клиентов в чёткое техническое задание.
-Отвечай ТОЛЬКО валидным JSON, без markdown-разметки, без пояснений до или после. Формат:
+const SYSTEM = `You are an experienced art director who helps freelancers turn vague, rambling client briefs into a clear technical spec.
+
+Respond with VALID JSON ONLY, no markdown formatting, no explanation before or after. Format:
 {
-  "goal": "краткая формулировка цели проекта одним предложением",
-  "audience": "целевая аудитория, если угадывается из брифа, иначе разумное предположение с пометкой (предположение)",
-  "must_have": ["список", "обязательных", "элементов, которые явно или неявно упомянуты"],
-  "style": "стилистические ориентиры, которые можно вычленить из брифа",
-  "constraints": ["сроки, бюджет и другие ограничения, если есть — иначе пустой массив"],
-  "open_questions": ["3-5 конкретных вопросов клиенту, которые нужно задать до старта работы, потому что бриф их не раскрывает"]
+  "goal": "a short one-sentence statement of the project's goal",
+  "audience": "target audience if it can be inferred from the brief, otherwise a reasonable guess marked as (assumption)",
+  "must_have": ["list", "of", "required elements that are explicitly or implicitly mentioned"],
+  "style": "style direction that can be extracted from the brief",
+  "constraints": ["deadlines, budget, and other constraints if any — otherwise an empty array"],
+  "open_questions": ["3-5 specific questions to ask the client before starting work, because the brief doesn't cover them"]
 }
-Пиши по-русски, конкретно, без воды. Если в брифе чего-то нет — не выдумывай факты, а помечай это как открытый вопрос.`;
+Write in English, concretely, no filler. If something isn't in the brief, don't invent it — flag it as an open question instead.`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,10 +21,10 @@ export default async function handler(req, res) {
 
   const { brief } = req.body || {};
   if (!brief || typeof brief !== 'string' || brief.trim().length < 5) {
-    return res.status(400).json({ error: 'Пустой или слишком короткий бриф' });
+    return res.status(400).json({ error: 'Brief is empty or too short' });
   }
   if (brief.length > 6000) {
-    return res.status(400).json({ error: 'Слишком длинный бриф (максимум ~6000 символов)' });
+    return res.status(400).json({ error: 'Brief is too long (max ~6000 characters)' });
   }
 
   try {
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errText = await response.text();
       console.error('Anthropic API error:', errText);
-      return res.status(502).json({ error: 'Ошибка на стороне AI-сервиса, попробуйте ещё раз' });
+      return res.status(502).json({ error: 'AI service error, please try again' });
     }
 
     const data = await response.json();
@@ -56,6 +57,6 @@ export default async function handler(req, res) {
     return res.status(200).json(parsed);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
