@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BriefClear — превращает сумбурный бриф в чёткое ТЗ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14171F;
+    --ink-soft:#1D212B;
+    --paper:#F7F3EA;
+    --paper-line:#E4DCC8;
+    --amber:#C97A2B;
+    --amber-soft:#E3A45E;
+    --sage:#6B8F71;
+    --charcoal:#22252B;
+    --grey:#9298A3;
+    --grey-line:#2A2F3B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 24px 80px;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:56px;flex-wrap:wrap;gap:16px;}
+  .logo{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:0.08em;color:var(--amber-soft);text-transform:uppercase;}
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(32px,4.5vw,52px);
+    line-height:1.05;
+    margin:8px 0 0;
+    letter-spacing:-0.01em;
+  }
+  h1 em{font-style:italic;color:var(--amber-soft);font-weight:500;}
+  .sub{color:var(--grey);font-size:15px;max-width:420px;line-height:1.5;text-align:right;}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1fr 40px 1fr;
+    gap:0;
+    align-items:stretch;
+  }
+  @media (max-width:860px){
+    .stage{grid-template-columns:1fr;gap:24px;}
+    .seam{display:none;}
+  }
+
+  .panel{
+    border-radius:4px;
+    display:flex;
+    flex-direction:column;
+    min-height:520px;
+  }
+  .panel-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;}
+
+  .chaos{
+    background:var(--paper);
+    color:var(--charcoal);
+    transform:rotate(-0.4deg);
+    box-shadow:0 20px 40px -20px rgba(0,0,0,0.5);
+  }
+  .chaos .panel-label{color:#8a7c5c;border-bottom:1px dashed var(--paper-line);}
+  .chaos .dot{background:var(--amber);}
+  .chaos textarea{
+    flex:1;
+    resize:none;
+    border:none;
+    background:transparent;
+    padding:20px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14.5px;
+    line-height:1.7;
+    color:var(--charcoal);
+    outline:none;
+  }
+  .chaos textarea::placeholder{color:#a89f87;}
+
+  .seam{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .seam-line{
+    width:1px;height:100%;
+    background:repeating-linear-gradient(to bottom, var(--grey-line) 0 6px, transparent 6px 12px);
+  }
+  .seam-btn{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:44px;height:44px;
+    border-radius:50%;
+    background:var(--amber);
+    border:4px solid var(--ink);
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    font-size:18px;
+    z-index:5;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .seam-btn:hover{transform:translate(-50%,-50%) scale(1.08);background:var(--amber-soft);}
+  .seam-btn:disabled{opacity:0.5;cursor:default;}
+  .seam-btn svg{width:18px;height:18px;}
+
+  .clarity{
+    background:var(--ink-soft);
+    border:1px solid var(--grey-line);
+  }
+  .clarity .panel-label{color:var(--sage);border-bottom:1px solid var(--grey-line);}
+  .clarity .dot{background:var(--sage);}
+  .clarity-body{
+    flex:1;
+    padding:20px;
+    overflow-y:auto;
+    font-size:14.5px;
+    line-height:1.65;
+  }
+  .clarity-body::-webkit-scrollbar{width:6px;}
+  .clarity-body::-webkit-scrollbar-thumb{background:var(--grey-line);border-radius:3px;}
+
+  .empty-state{
+    color:var(--grey);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100%;
+    text-align:center;
+    padding:20px;
+  }
+
+  .section{margin-bottom:22px;}
+  .section:last-child{margin-bottom:0;}
+  .section-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--amber-soft);
+    margin-bottom:8px;
+  }
+  .section ul{margin:0;padding-left:18px;}
+  .section li{margin-bottom:6px;color:#DCE0E8;}
+  .section p{margin:0;color:#DCE0E8;}
+  .questions li{color:var(--amber-soft);}
+
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 20px;border-top:1px solid var(--grey-line);
+  }
+  .copy-btn{
+    background:none;border:1px solid var(--grey-line);color:var(--grey);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    padding:8px 14px;border-radius:3px;cursor:pointer;
+  }
+  .copy-btn:hover{border-color:var(--sage);color:var(--sage);}
+
+  .loading{
+    display:flex;align-items:center;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--sage);
+    padding:20px;
+  }
+  .spinner{
+    width:14px;height:14px;border-radius:50%;
+    border:2px solid var(--grey-line);border-top-color:var(--sage);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  footer{
+    margin-top:40px;
+    color:var(--grey);
+    font-size:13px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">BriefClear</div>
+      <h1>Сумбур клиента →<br><em>чёткое ТЗ</em> дизайнеру</h1>
+    </div>
+    <div class="sub">Вставь бриф как есть — с воды, повторов и «сделайте красиво». Получи структуру, с которой можно работать.</div>
+  </header>
+
+  <div class="stage">
+    <div class="panel chaos">
+      <div class="panel-label"><span class="dot"></span>Бриф клиента, как есть</div>
+      <textarea id="input" placeholder="Привет! нужен лендинг, ну в целом чтобы было красиво и современно, посмотрите на конкурентов вот тут (ссылку скину позже), цвета не сильно яркие, шрифт какой нибудь стильный. еще нужно чтобы было понятно что мы про экологию. дедлайн желательно на след неделе. бюджет обсудим отдельно"></textarea>
+    </div>
+
+    <div class="seam">
+      <div class="seam-line"></div>
+      <button class="seam-btn" id="convertBtn" title="Преобразовать">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+
+    <div class="panel clarity">
+      <div class="panel-label"><span class="dot"></span>Структурированное ТЗ</div>
+      <div class="clarity-body" id="output">
+        <div class="empty-state">Нажми стрелку слева,<br>чтобы превратить бриф в ТЗ</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Прототип · работает на Claude · без сохранения данных на сервере</footer>
+</div>
+
+<script>
+const btn = document.getElementById('convertBtn');
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+
+const FREE_LIMIT = 3;
+const GUMROAD_URL = "https://gumroad.com/l/YOUR_PRODUCT"; // заменить на реальную ссылку после создания продукта
+
+function getUses(){ return parseInt(localStorage.getItem('bc_uses') || '0', 10); }
+function incUses(){ localStorage.setItem('bc_uses', String(getUses()+1)); }
+function getLicense(){ return localStorage.getItem('bc_license') || null; }
+function setLicense(key){ localStorage.setItem('bc_license', key); }
+
+async function convert(){
+  const brief = input.value.trim();
+  if(!brief){ return; }
+
+  const license = getLicense();
+  if(!license && getUses() >= FREE_LIMIT){
+    showPaywall();
+    return;
+  }
+
+  btn.disabled = true;
+  output.innerHTML = '<div class="loading"><div class="spinner"></div>Разбираю бриф…</div>';
+
+  try{
+    const response = await fetch("/api/convert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brief })
+    });
+    const parsed = await response.json();
+    if(!response.ok){ throw new Error(parsed.error || 'Ошибка'); }
+
+    if(!license) incUses();
+    renderResult(parsed);
+  }catch(err){
+    output.innerHTML = `<div class="empty-state">${escapeHtml(err.message || 'Не получилось. Попробуй ещё раз.')}</div>`;
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function showPaywall(){
+  output.innerHTML = `
+    <div class="empty-state" style="flex-direction:column;gap:14px;">
+      <div>Бесплатные ${FREE_LIMIT} разбора закончились.<br>Разблокируй безлимит одной оплатой.</div>
+      <a href="${GUMROAD_URL}" target="_blank" style="color:var(--amber-soft);font-family:'IBM Plex Mono',monospace;font-size:13px;">Купить доступ →</a>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input id="licenseInput" placeholder="вставь лицензионный ключ" style="background:var(--ink);border:1px solid var(--grey-line);color:var(--paper);padding:8px 10px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;">
+        <button class="copy-btn" id="activateBtn">Активировать</button>
+      </div>
+    </div>`;
+  document.getElementById('activateBtn').addEventListener('click', activateLicense);
+}
+
+async function activateLicense(){
+  const key = document.getElementById('licenseInput').value.trim();
+  if(!key) return;
+  try{
+    const r = await fetch('/api/verify-license', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ licenseKey: key })
+    });
+    const data = await r.json();
+    if(data.valid){
+      setLicense(key);
+      output.innerHTML = '<div class="empty-state">Готово, безлимит активирован ✓<br>Вставь бриф и нажми стрелку.</div>';
+    }else{
+      output.innerHTML = '<div class="empty-state">Ключ не подошёл. Проверь и попробуй снова.</div>';
+    }
+  }catch(err){
+    console.error(err);
+  }
+}
+
+function renderResult(data){
+  const constraints = (data.constraints && data.constraints.length)
+    ? data.constraints.map(c => `<li>${escapeHtml(c)}</li>`).join('')
+    : '<li>Не указаны — стоит уточнить</li>';
+
+  output.innerHTML = `
+    <div class="section">
+      <div class="section-title">Цель проекта</div>
+      <p>${escapeHtml(data.goal || '—')}</p>
+    </div>
+    <div class="section">
+      <div class="section-title">Аудитория</div>
+      <p>${escapeHtml(data.audience || '—')}</p>
+    </div>
+    <div class="section">
+      <div class="section-title">Обязательные элементы</div>
+      <ul>${(data.must_have||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
+    </div>
+    <div class="section">
+      <div class="section-title">Стиль</div>
+      <p>${escapeHtml(data.style || '—')}</p>
+    </div>
+    <div class="section">
+      <div class="section-title">Ограничения</div>
+      <ul>${constraints}</ul>
+    </div>
+    <div class="section">
+      <div class="section-title">Вопросы клиенту перед стартом</div>
+      <ul class="questions">${(data.open_questions||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
+    </div>
+    <div class="toolbar">
+      <button class="copy-btn" id="copyBtn">Скопировать как текст</button>
+    </div>
+  `;
+  document.getElementById('copyBtn').addEventListener('click', () => copyPlain(data));
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.innerText = str;
+  return d.innerHTML;
+}
+
+function copyPlain(data){
+  const lines = [
+    `ЦЕЛЬ: ${data.goal}`,
+    `АУДИТОРИЯ: ${data.audience}`,
+    `ОБЯЗАТЕЛЬНЫЕ ЭЛЕМЕНТЫ:\n- ${(data.must_have||[]).join('\n- ')}`,
+    `СТИЛЬ: ${data.style}`,
+    `ОГРАНИЧЕНИЯ:\n- ${(data.constraints||[]).join('\n- ') || 'не указаны'}`,
+    `ВОПРОСЫ КЛИЕНТУ:\n- ${(data.open_questions||[]).join('\n- ')}`
+  ].join('\n\n');
+  navigator.clipboard.writeText(lines);
+  const b = document.getElementById('copyBtn');
+  b.textContent = 'Скопировано ✓';
+  setTimeout(()=>b.textContent='Скопировать как текст', 1500);
+}
+
+btn.addEventListener('click', convert);
+</script>
+</body>
+</html>
