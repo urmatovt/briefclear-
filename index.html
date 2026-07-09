@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BriefClear — превращает сумбурный бриф в чёткое ТЗ</title>
+<title>BriefClear — turns a messy client brief into a clear spec</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -203,33 +203,33 @@
   <header>
     <div>
       <div class="logo">BriefClear</div>
-      <h1>Сумбур клиента →<br><em>чёткое ТЗ</em> дизайнеру</h1>
+      <h1>Messy client brief →<br><em>clear spec</em> for designers</h1>
     </div>
-    <div class="sub">Вставь бриф как есть — с воды, повторов и «сделайте красиво». Получи структуру, с которой можно работать.</div>
+    <div class="sub">Paste the brief exactly as you got it — vague, repetitive, "make it pop." Get back a structure you can actually work from.</div>
   </header>
 
   <div class="stage">
     <div class="panel chaos">
-      <div class="panel-label"><span class="dot"></span>Бриф клиента, как есть</div>
-      <textarea id="input" placeholder="Привет! нужен лендинг, ну в целом чтобы было красиво и современно, посмотрите на конкурентов вот тут (ссылку скину позже), цвета не сильно яркие, шрифт какой нибудь стильный. еще нужно чтобы было понятно что мы про экологию. дедлайн желательно на след неделе. бюджет обсудим отдельно"></textarea>
+      <div class="panel-label"><span class="dot"></span>Client brief, as-is</div>
+      <textarea id="input" placeholder="Hey! we need a landing page, just want it to look clean and modern, check out our competitors here (I'll send the link later), colors not too bright, some nice-looking font. also needs to feel eco-friendly. deadline is ideally next week. budget to discuss separately"></textarea>
     </div>
 
     <div class="seam">
       <div class="seam-line"></div>
-      <button class="seam-btn" id="convertBtn" title="Преобразовать">
+      <button class="seam-btn" id="convertBtn" title="Convert">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
 
     <div class="panel clarity">
-      <div class="panel-label"><span class="dot"></span>Структурированное ТЗ</div>
+      <div class="panel-label"><span class="dot"></span>Structured spec</div>
       <div class="clarity-body" id="output">
-        <div class="empty-state">Нажми стрелку слева,<br>чтобы превратить бриф в ТЗ</div>
+        <div class="empty-state">Hit the arrow on the left<br>to turn the brief into a spec</div>
       </div>
     </div>
   </div>
 
-  <footer>Прототип · работает на Claude · без сохранения данных на сервере</footer>
+  <footer>Prototype · powered by Claude · nothing is stored on the server</footer>
 </div>
 
 <script>
@@ -238,12 +238,13 @@ const input = document.getElementById('input');
 const output = document.getElementById('output');
 
 const FREE_LIMIT = 3;
-const GUMROAD_URL = "https://gumroad.com/l/YOUR_PRODUCT"; // заменить на реальную ссылку после создания продукта
 
 function getUses(){ return parseInt(localStorage.getItem('bc_uses') || '0', 10); }
 function incUses(){ localStorage.setItem('bc_uses', String(getUses()+1)); }
 function getLicense(){ return localStorage.getItem('bc_license') || null; }
 function setLicense(key){ localStorage.setItem('bc_license', key); }
+
+const USDT_ADDRESS = 'TKLGsd1JnJfW17AxkYCeox4y4ySScJG7PE';
 
 async function convert(){
   const brief = input.value.trim();
@@ -279,70 +280,83 @@ async function convert(){
 
 function showPaywall(){
   output.innerHTML = `
-    <div class="empty-state" style="flex-direction:column;gap:14px;">
-      <div>Бесплатные ${FREE_LIMIT} разбора закончились.<br>Разблокируй безлимит одной оплатой.</div>
-      <a href="${GUMROAD_URL}" target="_blank" style="color:var(--amber-soft);font-family:'IBM Plex Mono',monospace;font-size:13px;">Купить доступ →</a>
-      <div style="display:flex;gap:6px;margin-top:8px;">
-        <input id="licenseInput" placeholder="вставь лицензионный ключ" style="background:var(--ink);border:1px solid var(--grey-line);color:var(--paper);padding:8px 10px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;">
-        <button class="copy-btn" id="activateBtn">Активировать</button>
+    <div class="empty-state" style="flex-direction:column;gap:14px;align-items:stretch;text-align:left;">
+      <div style="text-align:center;">You've used your ${FREE_LIMIT} free conversions.<br>Unlock unlimited access for $9 in USDT.</div>
+      <div style="background:var(--ink);border:1px solid var(--grey-line);border-radius:4px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;word-break:break-all;">
+        <div style="color:var(--grey);margin-bottom:4px;">USDT (TRC20 network):</div>
+        <div style="color:var(--amber-soft);cursor:pointer;" id="addrCopy">${USDT_ADDRESS}</div>
+      </div>
+      <div style="color:var(--grey);font-size:12px;text-align:center;">Send $9 in USDT to this address, then paste the transaction TxID below</div>
+      <div style="display:flex;gap:6px;">
+        <input id="txidInput" placeholder="Transaction TxID" style="flex:1;background:var(--ink);border:1px solid var(--grey-line);color:var(--paper);padding:8px 10px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;">
+        <button class="copy-btn" id="activateBtn">Verify</button>
       </div>
     </div>`;
+  document.getElementById('addrCopy').addEventListener('click', () => {
+    navigator.clipboard.writeText(USDT_ADDRESS);
+    document.getElementById('addrCopy').textContent = 'Copied ✓';
+    setTimeout(() => document.getElementById('addrCopy').textContent = USDT_ADDRESS, 1200);
+  });
   document.getElementById('activateBtn').addEventListener('click', activateLicense);
 }
 
 async function activateLicense(){
-  const key = document.getElementById('licenseInput').value.trim();
+  const key = document.getElementById('txidInput').value.trim();
   if(!key) return;
+  const btnEl = document.getElementById('activateBtn');
+  btnEl.disabled = true;
+  btnEl.textContent = 'Checking…';
   try{
-    const r = await fetch('/api/verify-license', {
+    const r = await fetch('/api/verify-payment', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ licenseKey: key })
+      body: JSON.stringify({ txid: key })
     });
     const data = await r.json();
     if(data.valid){
       setLicense(key);
-      output.innerHTML = '<div class="empty-state">Готово, безлимит активирован ✓<br>Вставь бриф и нажми стрелку.</div>';
+      output.innerHTML = '<div class="empty-state">Payment confirmed, unlimited access unlocked ✓<br>Paste a brief and hit the arrow.</div>';
     }else{
-      output.innerHTML = '<div class="empty-state">Ключ не подошёл. Проверь и попробуй снова.</div>';
+      output.innerHTML = `<div class="empty-state">${escapeHtml(data.error || 'Could not confirm the payment')}</div>`;
     }
   }catch(err){
     console.error(err);
+    output.innerHTML = '<div class="empty-state">Verification error, try again.</div>';
   }
 }
 
 function renderResult(data){
   const constraints = (data.constraints && data.constraints.length)
     ? data.constraints.map(c => `<li>${escapeHtml(c)}</li>`).join('')
-    : '<li>Не указаны — стоит уточнить</li>';
+    : '<li>Not specified — worth asking</li>';
 
   output.innerHTML = `
     <div class="section">
-      <div class="section-title">Цель проекта</div>
+      <div class="section-title">Project goal</div>
       <p>${escapeHtml(data.goal || '—')}</p>
     </div>
     <div class="section">
-      <div class="section-title">Аудитория</div>
+      <div class="section-title">Audience</div>
       <p>${escapeHtml(data.audience || '—')}</p>
     </div>
     <div class="section">
-      <div class="section-title">Обязательные элементы</div>
+      <div class="section-title">Must-have elements</div>
       <ul>${(data.must_have||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
     </div>
     <div class="section">
-      <div class="section-title">Стиль</div>
+      <div class="section-title">Style</div>
       <p>${escapeHtml(data.style || '—')}</p>
     </div>
     <div class="section">
-      <div class="section-title">Ограничения</div>
+      <div class="section-title">Constraints</div>
       <ul>${constraints}</ul>
     </div>
     <div class="section">
-      <div class="section-title">Вопросы клиенту перед стартом</div>
+      <div class="section-title">Questions to ask the client</div>
       <ul class="questions">${(data.open_questions||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
     </div>
     <div class="toolbar">
-      <button class="copy-btn" id="copyBtn">Скопировать как текст</button>
+      <button class="copy-btn" id="copyBtn">Copy as text</button>
     </div>
   `;
   document.getElementById('copyBtn').addEventListener('click', () => copyPlain(data));
@@ -356,17 +370,17 @@ function escapeHtml(str){
 
 function copyPlain(data){
   const lines = [
-    `ЦЕЛЬ: ${data.goal}`,
-    `АУДИТОРИЯ: ${data.audience}`,
-    `ОБЯЗАТЕЛЬНЫЕ ЭЛЕМЕНТЫ:\n- ${(data.must_have||[]).join('\n- ')}`,
-    `СТИЛЬ: ${data.style}`,
-    `ОГРАНИЧЕНИЯ:\n- ${(data.constraints||[]).join('\n- ') || 'не указаны'}`,
-    `ВОПРОСЫ КЛИЕНТУ:\n- ${(data.open_questions||[]).join('\n- ')}`
+    `GOAL: ${data.goal}`,
+    `AUDIENCE: ${data.audience}`,
+    `MUST-HAVE ELEMENTS:\n- ${(data.must_have||[]).join('\n- ')}`,
+    `STYLE: ${data.style}`,
+    `CONSTRAINTS:\n- ${(data.constraints||[]).join('\n- ') || 'not specified'}`,
+    `QUESTIONS FOR THE CLIENT:\n- ${(data.open_questions||[]).join('\n- ')}`
   ].join('\n\n');
   navigator.clipboard.writeText(lines);
   const b = document.getElementById('copyBtn');
-  b.textContent = 'Скопировано ✓';
-  setTimeout(()=>b.textContent='Скопировать как текст', 1500);
+  b.textContent = 'Copied ✓';
+  setTimeout(()=>b.textContent='Copy as text', 1500);
 }
 
 btn.addEventListener('click', convert);
