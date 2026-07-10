@@ -238,11 +238,33 @@ const input = document.getElementById('input');
 const output = document.getElementById('output');
 
 const FREE_LIMIT = 3;
+const SUB_DAYS = 30;
 
 function getUses(){ return parseInt(localStorage.getItem('bc_uses') || '0', 10); }
 function incUses(){ localStorage.setItem('bc_uses', String(getUses()+1)); }
-function getLicense(){ return localStorage.getItem('bc_license') || null; }
-function setLicense(key){ localStorage.setItem('bc_license', key); }
+
+function getLicense(){
+  const key = localStorage.getItem('bc_license');
+  const date = localStorage.getItem('bc_license_date');
+  if(!key || !date) return null;
+  const daysPassed = (Date.now() - Number(date)) / (1000*60*60*24);
+  if(daysPassed > SUB_DAYS){
+    localStorage.removeItem('bc_license');
+    localStorage.removeItem('bc_license_date');
+    return null;
+  }
+  return key;
+}
+function setLicense(key){
+  localStorage.setItem('bc_license', key);
+  localStorage.setItem('bc_license_date', String(Date.now()));
+}
+function daysLeft(){
+  const date = localStorage.getItem('bc_license_date');
+  if(!date) return 0;
+  const passed = (Date.now() - Number(date)) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(SUB_DAYS - passed));
+}
 
 const USDT_ADDRESS = 'TKLGsd1JnJfW17AxkYCeox4y4ySScJG7PE';
 
@@ -257,7 +279,7 @@ async function convert(){
   }
 
   btn.disabled = true;
-  output.innerHTML = '<div class="loading"><div class="spinner"></div>Разбираю бриф…</div>';
+  output.innerHTML = '<div class="loading"><div class="spinner"></div>Working on it…</div>';
 
   try{
     const response = await fetch("/api/convert", {
@@ -266,12 +288,12 @@ async function convert(){
       body: JSON.stringify({ brief })
     });
     const parsed = await response.json();
-    if(!response.ok){ throw new Error(parsed.error || 'Ошибка'); }
+    if(!response.ok){ throw new Error(parsed.error || 'Error'); }
 
     if(!license) incUses();
     renderResult(parsed);
   }catch(err){
-    output.innerHTML = `<div class="empty-state">${escapeHtml(err.message || 'Не получилось. Попробуй ещё раз.')}</div>`;
+    output.innerHTML = `<div class="empty-state">${escapeHtml(err.message || 'Something went wrong. Try again.')}</div>`;
     console.error(err);
   }finally{
     btn.disabled = false;
@@ -281,12 +303,13 @@ async function convert(){
 function showPaywall(){
   output.innerHTML = `
     <div class="empty-state" style="flex-direction:column;gap:14px;align-items:stretch;text-align:left;">
-      <div style="text-align:center;">You've used your ${FREE_LIMIT} free conversions.<br>Unlock unlimited access for $9 in USDT.</div>
+      <div style="text-align:center;">You've used your ${FREE_LIMIT} free conversions.<br>Unlock unlimited access for $9/month in USDT.</div>
       <div style="background:var(--ink);border:1px solid var(--grey-line);border-radius:4px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;word-break:break-all;">
         <div style="color:var(--grey);margin-bottom:4px;">USDT (TRC20 network):</div>
         <div style="color:var(--amber-soft);cursor:pointer;" id="addrCopy">${USDT_ADDRESS}</div>
       </div>
-      <div style="color:var(--grey);font-size:12px;text-align:center;">Send $9 in USDT to this address, then paste the transaction TxID below</div>
+      <div style="color:var(--grey);font-size:12px;text-align:center;">Send $9 in USDT to this address, then fill in the fields below</div>
+      <input id="emailInput" type="email" placeholder="Your email (so you don't lose access later)" style="background:var(--ink);border:1px solid var(--grey-line);color:var(--paper);padding:8px 10px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;">
       <div style="display:flex;gap:6px;">
         <input id="txidInput" placeholder="Transaction TxID" style="flex:1;background:var(--ink);border:1px solid var(--grey-line);color:var(--paper);padding:8px 10px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;">
         <button class="copy-btn" id="activateBtn">Verify</button>
@@ -302,6 +325,7 @@ function showPaywall(){
 
 async function activateLicense(){
   const key = document.getElementById('txidInput').value.trim();
+  const email = document.getElementById('emailInput').value.trim();
   if(!key) return;
   const btnEl = document.getElementById('activateBtn');
   btnEl.disabled = true;
@@ -310,12 +334,12 @@ async function activateLicense(){
     const r = await fetch('/api/verify-payment', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ txid: key })
+      body: JSON.stringify({ txid: key, email })
     });
     const data = await r.json();
     if(data.valid){
       setLicense(key);
-      output.innerHTML = '<div class="empty-state">Payment confirmed, unlimited access unlocked ✓<br>Paste a brief and hit the arrow.</div>';
+      output.innerHTML = '<div class="empty-state">Payment confirmed, unlimited access unlocked for 30 days ✓<br>Paste a brief and hit the arrow.</div>';
     }else{
       output.innerHTML = `<div class="empty-state">${escapeHtml(data.error || 'Could not confirm the payment')}</div>`;
     }
