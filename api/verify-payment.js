@@ -3,14 +3,14 @@
 // Uses the public TronGrid API, no key required.
 
 const USDT_ADDRESS = 'TKLGsd1JnJfW17AxkYCeox4y4ySScJG7PE';
-const MIN_AMOUNT = 9; // minimum amount in USDT
+const MIN_AMOUNT = 9; // minimum amount in USDT ($9/month)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ valid: false, error: 'Method not allowed' });
   }
 
-  const { txid } = req.body || {};
+  const { txid, email } = req.body || {};
   if (!txid || typeof txid !== 'string' || txid.trim().length < 10) {
     return res.status(400).json({ valid: false, error: 'Please provide a valid transaction TxID' });
   }
@@ -47,9 +47,13 @@ export default async function handler(req, res) {
     if (amount < MIN_AMOUNT) {
       return res.status(200).json({
         valid: false,
-        error: `Transfer amount (${amount} USDT) is less than required ($${MIN_AMOUNT})`
+        error: `Transfer amount (${amount} USDT) is less than required ($${MIN_AMOUNT}/month)`
       });
     }
+
+    // Log the payment so the owner can see it in Vercel's function logs
+    // (Dashboard -> Project -> Logs). Not a database, just a record for now.
+    console.log(`[PAYMENT] txid=${txid.trim()} amount=${amount} email=${email || 'not provided'} date=${new Date().toISOString()}`);
 
     return res.status(200).json({ valid: true, amount });
   } catch (err) {
